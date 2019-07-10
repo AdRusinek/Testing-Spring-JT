@@ -21,6 +21,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.reset;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,6 +52,52 @@ class OwnerControllerTest {
     }
 
     @Test
+    void testUpdateOwnerPostValid() throws Exception {
+        mockMvc.perform(post("/owners/{ownerId}/edit", 1)
+                .param("firstName", "Jimmy")
+                .param("lastName", "Buffett")
+                .param("address", "123 Duval St")
+                .param("city", "Key West")
+                .param("telephone", "3213124123"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(view().name("redirect:/owners/{ownerId}"));
+    }
+
+    @Test
+    void testUpdateOwnerPostNotValid() throws Exception {
+        mockMvc.perform(post("/owners/{ownerId}/edit", 1)
+                .param("firstName", "Jimmy")
+                .param("lastName", "Buffett")
+                .param("address", "123 Duval St"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("owners/createOrUpdateOwnerForm"));
+    }
+
+    @Test
+    void testNewOwnerPostValid() throws Exception {
+        mockMvc.perform(post("/owners/new")
+                .param("firstName", "Jimmy")
+                .param("lastName", "Buffett")
+                .param("address", "123 Duval St")
+                .param("city", "Key West")
+                .param("telephone", "3213124123"))
+                .andExpect(status().is3xxRedirection());
+    }
+
+    @Test
+    void testNewOwnerPostNotValid() throws Exception {
+        mockMvc.perform(post("/owners/new")
+                .param("firstName", "Jimmy")
+                .param("lastName", "Buffett")
+                .param("city", "Key West"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeHasErrors("owner"))
+                .andExpect(model().attributeHasFieldErrors("owner", "address"))
+                .andExpect(model().attributeHasFieldErrors("owner", "telephone"))
+                .andExpect(view().name("owners/createOrUpdateOwnerForm"));
+    }
+
+    @Test
     void testReturnListOfOwners() throws Exception {
         given(clinicService.findOwnerByLastName(""))
                 .willReturn(Lists.newArrayList(new Owner(), new Owner()));
@@ -73,7 +120,7 @@ class OwnerControllerTest {
         final String findJustOne = "FindJustOne";
 
         owner.setLastName(findJustOne);
-        
+
         given(clinicService.findOwnerByLastName(findJustOne))
                 .willReturn(Lists.newArrayList(owner));
 
@@ -88,7 +135,7 @@ class OwnerControllerTest {
     @Test
     void findByNameNotFound() throws Exception {
         mockMvc.perform(get("/owners")
-                .param("lastName","Dont find me"))
+                .param("lastName", "Dont find me"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("owners/findOwners"));
     }
